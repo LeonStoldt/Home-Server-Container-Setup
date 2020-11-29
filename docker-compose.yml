@@ -13,7 +13,7 @@ services:
       - "443:443/tcp"
     environment:
       TZ: 'Europe/Berlin'
-      WEBPASSWORD: 'password_placeholder'
+      WEBPASSWORD: "${PIHOLE_PW}"
     # Volumes store your data between container upgrades
     volumes:
       - './etc-pihole/:/etc/pihole/'
@@ -44,7 +44,7 @@ services:
     networks:
       - proxy
     environment:
-      - VIRTUAL_HOST=portainer.yourdomain.com
+      - VIRTUAL_HOST=${PORTAINER_VHOST}
       - VIRTUAL_PORT=9000
     ports:
       - 8000:8000
