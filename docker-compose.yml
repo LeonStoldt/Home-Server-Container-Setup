@@ -48,7 +48,7 @@ services:
       ServerIP: ${PIHOLE_HOST_IP}
       ServerIPv6: ${PIHOLE_HOST_IPV6>
       VIRTUAL_HOST: ${PIHOLE_VHOST}
-      - VIRTUAL_PORT=80
+      VIRTUAL_PORT: 80
     dns:
       # set default dns to use (if 127.0.0.1 is not available it uses Cloudfares DNS)
       - 127.0.0.1
