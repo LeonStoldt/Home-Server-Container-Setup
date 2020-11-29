@@ -42,7 +42,12 @@ services:
     environment:
       TZ: 'Europe/Berlin'
       WEBPASSWORD: '${PIHOLE_PW}'
-      - VIRTUAL_HOST=${PIHOLE_VHOST}
+      CONDITIONAL_FORWARDING: true
+      CONDITIONAL_FORWARDING_IP: ${PIHOLE_ROUTER_IP}
+      CONDITIONAL_FORWARDING_DOMAIN: ${PIHOLE_NETWORK_DOMAIN}
+      ServerIP: ${PIHOLE_HOST_IP}
+      ServerIPv6: ${PIHOLE_HOST_IPV6>
+      VIRTUAL_HOST: ${PIHOLE_VHOST}
       - VIRTUAL_PORT=80
     dns:
       # set default dns to use (if 127.0.0.1 is not available it uses Cloudfares DNS)
