@@ -3,6 +3,7 @@ version: "3"
 services:
   # start any containers you want proxied with an env var:
   # docker run -e VIRTUAL_HOST=foo.bar.com  ...
+  # note: "The jwilder/nginx-proxy image is built for x86 and doesn't run on armhf / RaspberryPi out of the box. You need to modify the Dockerfile and build the image yourself." - bjoernbusch (https://github.com/nginx-proxy/nginx-proxy/issues/715)
   nginx-proxy:
     image: jwilder/nginx-proxy
     restart: always
@@ -26,8 +27,10 @@ services:
     ports:
       - 8000:8000
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "portainer_data:/data"
+    depends_on:
+      - "nginx-proxy"
       
   # More info at https://github.com/pi-hole/docker-pi-hole/ and https://docs.pi-hole.net/
   pihole:
@@ -41,6 +44,8 @@ services:
       - "8443:443/tcp"
     environment:
       TZ: 'Europe/Berlin'
+      DNS1: '1.1.1.1' # Cloudflare DNS
+      DNS2: '1.0.0.1' # Cloudflare DNS
       WEBPASSWORD: '${PIHOLE_PW}'
       CONDITIONAL_FORWARDING: "true"
       CONDITIONAL_FORWARDING_IP: ${PIHOLE_ROUTER_IP}
@@ -55,14 +60,17 @@ services:
       - 1.1.1.1
     # Volumes store your data between container upgrades
     volumes:
-      - './etc-pihole/:/etc/pihole/'
-      - './etc-dnsmasq.d/:/etc/dnsmasq.d/'
-      - ./pihole/pihole.log:/var/log/pihole.log
+      - "/etc/pihole/:/etc/pihole/"
+      - "/etc/dnsmasq.d/:/etc/dnsmasq.d/"
+      - "/etc/pihole/adlists.list:${PIHOLE_ADLIST_PATH}"
+      - "/pihole/pihole.log:/var/log/pihole.log"
     # Recommended but not required (DHCP needs NET_ADMIN)
     #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
     cap_add:
       - NET_ADMIN
     restart: unless-stopped
+    depends_on:
+      - "nginx-proxy"
       
   plex:
     image: jaymoulin/plex:latest
@@ -71,6 +79,8 @@ services:
     volumes:
       - /media/:${PLEX_MEDIA_PATH}
     network_mode: host
+    depends_on:
+      - "nginx-proxy"
 
 networks:
   proxy:
