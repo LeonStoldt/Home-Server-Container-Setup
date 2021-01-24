@@ -63,6 +63,8 @@ services:
       - "/etc/pihole/:/etc/pihole/"
       - "/etc/dnsmasq.d/:/etc/dnsmasq.d/"
       - "/pihole/pihole.log:/var/log/pihole.log"
+    # REMINDER: create an empty file to prevent creating a directory - this would not allow to start pihole-FTL
+    # (https://github.com/pi-hole/docker-pi-hole/issues/645#issuecomment-670809672)
     # Recommended but not required (DHCP needs NET_ADMIN)
     #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
     cap_add:
