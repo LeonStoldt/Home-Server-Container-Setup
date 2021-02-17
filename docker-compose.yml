@@ -25,8 +25,8 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Europe/London
-      - SERVERURL=wireguard.domain.com #optional
+      - TZ=${ZIMEZONE}
+      - SERVERURL=${VPN_SERVER_URL} #optional
       - SERVERPORT=51820 #optional
       - PEERS=1 #optional
       - PEERDNS=auto #optional
@@ -34,7 +34,7 @@ services:
       - ALLOWEDIPS=0.0.0.0/0 #optional
     volumes:
       - /usr/share/appdata/wireguard/config:/config
-      - /usr/src:/usr/src
+      - /usr/src:/usr/src # location of kernel headers
       - /lib/modules:/lib/modules
     ports:
       - 51820:51820/udp
@@ -71,17 +71,17 @@ services:
       - "8080:80/tcp"
       - "8443:443/tcp"
     environment:
-      TZ: 'Europe/Berlin'
-      DNS1: '1.1.1.1' # Cloudflare DNS
-      DNS2: '1.0.0.1' # Cloudflare DNS
-      WEBPASSWORD: '${PIHOLE_PW}'
-      CONDITIONAL_FORWARDING: "true"
-      CONDITIONAL_FORWARDING_IP: ${PIHOLE_ROUTER_IP}
-      CONDITIONAL_FORWARDING_DOMAIN: ${PIHOLE_NETWORK_DOMAIN}
-      ServerIP: ${PIHOLE_HOST_IP}
-      ServerIPv6: ${PIHOLE_HOST_IPV6}
-      VIRTUAL_HOST: ${PIHOLE_VHOST}
-      VIRTUAL_PORT: 80
+      - TZ=${TIMEZONE} # Europe/Berlin
+      - DNS1=1.1.1.1 # Cloudflare DNS
+      - DNS2=1.0.0.1 # Cloudflare DNS
+      - WEBPASSWORD=${PIHOLE_PW}
+      - CONDITIONAL_FORWARDING=true
+      - CONDITIONAL_FORWARDING_IP=${PIHOLE_ROUTER_IP}
+      - CONDITIONAL_FORWARDING_DOMAIN=${PIHOLE_NETWORK_DOMAIN}
+      - ServerIP=${PIHOLE_HOST_IP}
+      - ServerIPv6=${PIHOLE_HOST_IPV6}
+      - VIRTUAL_HOST=${PIHOLE_VHOST}
+      - VIRTUAL_PORT=80
     dns:
       # set default dns to use (if 127.0.0.1 is not available it uses Cloudfares DNS)
       - 127.0.0.1
