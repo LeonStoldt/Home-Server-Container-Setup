@@ -43,9 +43,8 @@ services:
     restart: unless-stopped
 
   portainer:
-    image: portainerci/portainer:2.1
+    image: portainer/portainer-ce:alpine
     command: -H unix:///var/run/docker.sock
-    restart: always
     networks:
       - proxy
     environment:
