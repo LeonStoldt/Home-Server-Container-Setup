@@ -1,20 +1,6 @@
 version: "3"
 
 services:
-  # start any containers you want proxied with an env var:
-  # docker run -e VIRTUAL_HOST=foo.bar.com  ...
-  # note: "The jwilder/nginx-proxy image is built for x86 and doesn't run on armhf / RaspberryPi out of the box. You need to modify the Dockerfile and build the image yourself." - bjoernbusch (https://github.com/nginx-proxy/nginx-proxy/issues/715)
-  nginx-proxy:
-    image: jwilder/nginx-proxy
-    restart: always
-    networks:
-      - proxy
-    ports:
-      - "80:80"
-    volumes:
-      - "/var/run/docker.sock:/tmp/docker.sock:ro"
-      - "./vhost.d:/etc/nginx/vhost.d:ro"
-
   # on raspberry pi run 'sudo apt update && sudo apt upgrade && sudo apt install raspberrypi-kernel-headers' and reboot before starting wireguard
   wireguard:
     image: ghcr.io/linuxserver/wireguard
@@ -45,20 +31,29 @@ services:
   portainer:
     image: portainer/portainer-ce:alpine
     command: -H unix:///var/run/docker.sock
-    networks:
-      - proxy
-    environment:
-      - VIRTUAL_HOST=${PORTAINER_VHOST}
-      - VIRTUAL_PORT=9000
     ports:
       - "9000:9000"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "portainer_data:/data"
     restart: always
-    depends_on:
-      - "nginx-proxy"
-      
+  
+  # Cloudflared for DoH for Pihole (https://docs.pi-hole.net/guides/dns/cloudflared/)
+  cloudflared:
+    image: visibilityspots/cloudflared
+    container_name: cloudflared
+    ports:
+      - "5054:5054/tcp"
+      - "5054:5054/udp"
+    environment:
+      TZ=${TIMEZONE} # Europe/Berlin
+      PORT=5054
+      ADDRESS=0.0.0.0
+    restart: always
+    networks:
+      dns-net:
+        ipv4_address: 172.20.0.2
+  
   # More info at https://github.com/pi-hole/docker-pi-hole/ and https://docs.pi-hole.net/
   pihole:
     container_name: pihole
@@ -71,16 +66,14 @@ services:
       - "8443:443/tcp"
     environment:
       - TZ=${TIMEZONE} # Europe/Berlin
-      - DNS1=1.1.1.1 # Cloudflare DNS
-      - DNS2=1.0.0.1 # Cloudflare DNS
+      - DNS1=172.28.0.2#5054 # cloudflared DoH
+      #- DNS2=1.0.0.1 # Cloudflare DNS
       - WEBPASSWORD=${PIHOLE_PW}
       - CONDITIONAL_FORWARDING=true
       - CONDITIONAL_FORWARDING_IP=${PIHOLE_ROUTER_IP}
       - CONDITIONAL_FORWARDING_DOMAIN=${PIHOLE_NETWORK_DOMAIN}
       - ServerIP=${PIHOLE_HOST_IP}
       - ServerIPv6=${PIHOLE_HOST_IPV6}
-      - VIRTUAL_HOST=${PIHOLE_VHOST}
-      - VIRTUAL_PORT=80
     dns:
       # set default dns to use (if 127.0.0.1 is not available it uses Cloudfares DNS)
       - 127.0.0.1
@@ -96,9 +89,9 @@ services:
     #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
     cap_add:
       - NET_ADMIN
-    restart: unless-stopped
+    restart: always
     depends_on:
-      - "nginx-proxy"
+      - "dns-net"
       
   plex:
     image: jaymoulin/plex:latest
@@ -107,11 +100,12 @@ services:
     volumes:
       - /media/:${PLEX_MEDIA_PATH}
     network_mode: host
-    depends_on:
-      - "nginx-proxy"
 
 networks:
-  proxy:
+  dns-net:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
 
 volumes:
   portainer_data:
