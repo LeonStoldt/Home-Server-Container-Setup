@@ -89,16 +89,18 @@ services:
     #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
     cap_add:
       - NET_ADMIN
-    restart: always
     depends_on:
-      - "dns-net"
+      - "cloudflared"
+    restart: always
+    networks:
+      - dns-net
       
   plex:
     image: jaymoulin/plex:latest
     container_name: plex
     restart: always
     volumes:
-      - /media/:${PLEX_MEDIA_PATH}
+      - ${PLEX_MEDIA_PATH}:/media/
     network_mode: host
 
 networks:
