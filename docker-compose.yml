@@ -1,114 +1,18 @@
 version: "3"
 
 services:
-  # on raspberry pi run 'sudo apt update && sudo apt upgrade && sudo apt install raspberrypi-kernel-headers' and reboot before starting wireguard
-  wireguard:
-    image: ghcr.io/linuxserver/wireguard
-    container_name: wireguard
-    cap_add:
-      - NET_ADMIN
-      - SYS_MODULE
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=${ZIMEZONE}
-      - SERVERURL=${VPN_SERVER_URL} #optional
-      - SERVERPORT=51820 #optional
-      - PEERS=1 #optional
-      - PEERDNS=auto #optional
-      - INTERNAL_SUBNET=10.13.13.0 #optional
-      - ALLOWEDIPS=0.0.0.0/0 #optional
-    volumes:
-      - /usr/share/appdata/wireguard/config:/config
-      - /usr/src:/usr/src # location of kernel headers
-      - /lib/modules:/lib/modules
+  adguardhome:
+    image: adguard/adguardhome
+    container_name: adguardhome
     ports:
-      - 51820:51820/udp
-    sysctls:
-      - net.ipv4.conf.all.src_valid_mark=1
+      - 53:53/tcp
+      - 53:53/udp
+      - 784:784/udp
+      - 853:853/tcp
+      - 3000:3000/tcp
+      - 80:80/tcp
+      - 443:443/tcp
+    volumes:
+      - ./work:/opt/adguardhome/work
+      - ./conf:/opt/adguardhome/conf
     restart: unless-stopped
-
-  portainer:
-    image: portainer/portainer-ce:alpine
-    command: -H unix:///var/run/docker.sock
-    ports:
-      - "9000:9000"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
-      - "portainer_data:/data"
-    restart: always
-  
-  # Cloudflared for DoH for Pihole (https://docs.pi-hole.net/guides/dns/cloudflared/)
-  cloudflared:
-    image: visibilityspots/cloudflared
-    container_name: cloudflared
-    ports:
-      - "5054:5054/tcp"
-      - "5054:5054/udp"
-    environment:
-      - TZ=${TIMEZONE} # Europe/Berlin
-      - PORT=5054
-      - ADDRESS=0.0.0.0
-    restart: always
-    networks:
-      dns-net:
-        ipv4_address: 172.20.0.2
-  
-  # More info at https://github.com/pi-hole/docker-pi-hole/ and https://docs.pi-hole.net/
-  pihole:
-    container_name: pihole
-    image: pihole/pihole:latest
-    ports:
-      - "53:53/tcp"
-      - "53:53/udp"
-      - "67:67/udp"
-      - "8080:80/tcp"
-      - "8443:443/tcp"
-    environment:
-      - TZ=${TIMEZONE} # Europe/Berlin
-      - DNS1=172.20.0.2#5054 # cloudflared DoH
-      #- DNS2=1.0.0.1 # Cloudflare DNS
-      - WEBPASSWORD=${PIHOLE_PW}
-      - CONDITIONAL_FORWARDING=true
-      - CONDITIONAL_FORWARDING_IP=${PIHOLE_ROUTER_IP}
-      - CONDITIONAL_FORWARDING_DOMAIN=${PIHOLE_NETWORK_DOMAIN}
-      - ServerIP=${PIHOLE_HOST_IP}
-      - ServerIPv6=${PIHOLE_HOST_IPV6}
-    dns:
-      # set default dns to use (if 127.0.0.1 is not available it uses Cloudfares DNS)
-      - 127.0.0.1
-      - 1.1.1.1
-    # Volumes store your data between container upgrades
-    volumes:
-      - "/etc/pihole/:/etc/pihole/"
-      - "/etc/dnsmasq.d/:/etc/dnsmasq.d/"
-      - "/pihole/pihole.log:/var/log/pihole.log"
-    # REMINDER: create an empty file to prevent creating a directory - this would not allow to start pihole-FTL
-    # `touch /pihole/pihole.log` - you may check the ownership
-    # (https://github.com/pi-hole/docker-pi-hole/issues/645#issuecomment-670809672)
-    # Recommended but not required (DHCP needs NET_ADMIN)
-    #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
-    cap_add:
-      - NET_ADMIN
-    depends_on:
-      - "cloudflared"
-    restart: always
-    networks:
-      - dns-net
-      
-  plex:
-    image: jaymoulin/plex:latest
-    container_name: plex
-    restart: always
-    volumes:
-      - ${PLEX_MEDIA_PATH}:/media/
-    network_mode: host
-
-networks:
-  dns-net:
-    ipam:
-      config:
-        - subnet: 172.20.0.0/24
-
-volumes:
-  portainer_data:
