@@ -42,7 +42,7 @@ services:
       - MYSQL_ROOT_PASSWORD=${SEAFILE_DB_PW}
       - MYSQL_LOG_CONSOLE=true
     volumes:
-      - /opt/seafile-mysql/db:/var/lib/mysql  # Requested, specifies the path to MySQL data persistent store.
+      - seafile-db:/var/lib/mysql  # Requested, specifies the path to MySQL data persistent store.
     networks:
       - seafile-net
     restart: unless-stopped
@@ -83,3 +83,4 @@ networks:
   
 volumes:
   uptime-kuma:
+  seafile-db:
