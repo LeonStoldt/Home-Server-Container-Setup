@@ -68,7 +68,7 @@ services:
     environment:
       - DB_HOST=mariadb
       - DB_ROOT_PASSWD=${SEAFILE_DB_PW}
-      - TIME_ZONE=${ZIMEZONE}
+      - TIME_ZONE=${TIMEZONE}
       - SEAFILE_ADMIN_EMAIL=${SEAFILE_ADMIN_MAIL}
       - SEAFILE_ADMIN_PASSWORD=${SEAFILE_ADMIN_PW}
       - SEAFILE_SERVER_LETSENCRYPT=false   # Whether to use https or not.
