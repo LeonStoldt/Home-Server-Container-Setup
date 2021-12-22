@@ -1,6 +1,26 @@
 version: "3"
 
 services:
+  homer:
+    image: b4bz/homer
+    #To build from source, comment previous line and uncomment below
+    #build: .
+    container_name: homer
+    volumes:
+      - ./homer:/www/assets
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+    
+  uptimekuma:
+    container_name: uptime-kuma
+    image: louislam/uptime-kuma
+    volumes:
+      - uptime-kuma:/app/data
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+  
   adguardhome:
     image: adguard/adguardhome
     container_name: adguardhome
@@ -16,3 +36,52 @@ services:
       - ./work:/opt/adguardhome/work
       - ./conf:/opt/adguardhome/conf
     restart: unless-stopped
+  
+  mariadb:
+    image: mariadb:latest #initially 10.5
+    container_name: seafile-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${SEAFILE_DB_PW}
+      - MYSQL_LOG_CONSOLE=true
+    volumes:
+      - /opt/seafile-mysql/db:/var/lib/mysql  # Requested, specifies the path to MySQL data persistent store.
+    networks:
+      - seafile-net
+    restart: unless-stopped
+
+  memcached:
+    image: memcached:latest #initially 1.5.6
+    container_name: seafile-memcached
+    entrypoint: memcached -m 256
+    networks:
+      - seafile-net
+    restart: unless-stopped
+          
+  seafile:
+    image: seafileltd/seafile-mc:latest
+    container_name: seafile
+    ports:
+      - "8090:80"
+#     - "443:443"  # If https is enabled
+    volumes:
+      - /opt/seafile-data:/shared   # Requested, specifies the path to Seafile data persistent store.
+    environment:
+      - DB_HOST=mariadb
+      - DB_ROOT_PASSWD=${SEAFILE_DB_PW}
+      - TIME_ZONE=${ZIMEZONE}
+      - SEAFILE_ADMIN_EMAIL=${SEAFILE_ADMIN_MAIL}
+      - SEAFILE_ADMIN_PASSWORD=${SEAFILE_ADMIN_PW}
+      - SEAFILE_SERVER_LETSENCRYPT=false   # Whether to use https or not.
+      #- SEAFILE_SERVER_HOSTNAME=docs.seafile.com # Specifies your host name if https is enabled.
+    depends_on:
+      - mariadb
+      - memcached
+    networks:
+      - seafile-net
+    restart: unless-stopped
+
+networks:
+  seafile-net:
+  
+volumes:
+  uptime-kuma:
